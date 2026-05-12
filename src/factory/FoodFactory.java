@@ -4,9 +4,9 @@ package factory;
  *
  * @author shaha
  */
-public class FoodFactory {
+public class FoodFactory implements AbstractFactory{
 
-    public static Food createFood(String type) {
+    public Food createFood(String type) {
 
         if (type == null) return null;
 
@@ -20,5 +20,9 @@ public class FoodFactory {
 
         System.out.println("Unknown food type: \"" + type + "\"");
         return null;
+    }
+    
+    public Drink createDrink(String type) {
+        throw new UnsupportedOperationException("DrinkFactory does not create food. Use FoodFactory.");
     }
 }
