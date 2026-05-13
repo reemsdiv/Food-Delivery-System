@@ -3,6 +3,9 @@ import factory.AbstractFactory;
 import factory.Drink;
 import factory.FactoryProducer;
 import factory.Food;
+import Decorator.Cheese;
+import Decorator.Fries;
+import Decorator.ExtraSauce;
 import java.util.Scanner;
 /**
  * Temporary Main to test the Factory pattern in isolation.
@@ -14,66 +17,98 @@ import java.util.Scanner;
 public class FoodDeliverySystem {
 
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
- 
+         Scanner scanner = new Scanner(System.in);
+
         System.out.println("===== FOOD DELIVERY SYSTEM =====\n");
- 
-        // --- Step 1: Choose category ---
-        System.out.println("What would you like to order?");
-        System.out.println("  1. Food  (pizza, burger)");
-        System.out.println("  2. Drink (juice, water)");
-        System.out.print("\nEnter category (food / drink): ");
-        String category = scanner.nextLine();
- 
-        AbstractFactory factory = FactoryProducer.getFactory(category);
- 
-        if (factory == null) {
-            System.out.println("Sorry, \"" + category + "\" is not a valid category.");
+
+        // Create factories using Abstract Factory Pattern
+        AbstractFactory foodFactory = FactoryProducer.getFactory("food");
+        AbstractFactory drinkFactory = FactoryProducer.getFactory("drink");
+
+        // ---------------- Choose food item ----------------
+        System.out.print("Enter food item (pizza / burger): ");
+        String foodItem = scanner.nextLine();
+
+        System.out.print("Enter food quantity: ");
+        int foodQuantity = scanner.nextInt();
+        scanner.nextLine(); // Clear the input buffer
+
+        // Create food object using FoodFactory
+        Food food = foodFactory.createFood(foodItem);
+
+        // Validate food item
+        if (food == null) {
+            System.out.println("Sorry, \"" + foodItem + "\" is not on the menu.");
             scanner.close();
             return;
         }
- 
-        // --- Step 2: Choose item ---
-        System.out.print("Enter item name: ");
-        String item = scanner.nextLine();
- 
-        // --- Step 3: Choose quantity ---
-        System.out.print("Enter quantity: ");
-        int quantity = scanner.nextInt();
- 
-        // --- Step 4: Create and display ---
-        System.out.println("\n===== YOUR ORDER =====");
- 
-        if (category.trim().equalsIgnoreCase("food")) {
- 
-            Food food = factory.createFood(item);
- 
-            if (food == null) {
-                System.out.println("Sorry, \"" + item + "\" is not on the menu.");
-            } else {
-                double total = food.getPrice() * quantity;
-                System.out.println("Item:     " + food.getDescription());
-                System.out.println("Quantity: " + quantity);
-                System.out.println("Price:    " + food.getPrice() + " SAR x " + quantity);
-                System.out.println("Total:    " + total + " SAR");
-            }
- 
-        } else {
- 
-            Drink drink = factory.createDrink(item);
- 
-            if (drink == null) {
-                System.out.println("Sorry, \"" + item + "\" is not on the menu.");
-            } else {
-                double total = drink.getPrice() * quantity;
-                System.out.println("Item:     " + drink.getDescription());
-                System.out.println("Quantity: " + quantity);
-                System.out.println("Price:    " + drink.getPrice() + " SAR x " + quantity);
-                System.out.println("Total:    " + total + " SAR");
-            }
+
+        // ---------------- Add food extras ----------------
+        // Apply Decorator Pattern to add extras without changing the original food class
+
+        System.out.print("Add cheese? (yes/no): ");
+        String cheese = scanner.nextLine();
+
+        if (cheese.equalsIgnoreCase("yes")) {
+            food = new Cheese(food);
         }
- 
+
+        System.out.print("Add fries? (yes/no): ");
+        String fries = scanner.nextLine();
+
+        if (fries.equalsIgnoreCase("yes")) {
+            food = new Fries(food);
+        }
+
+        System.out.print("Add extra sauce? (yes/no): ");
+        String sauce = scanner.nextLine();
+
+        if (sauce.equalsIgnoreCase("yes")) {
+            food = new ExtraSauce(food);
+        }
+
+        // ---------------- Choose drink item ----------------
+        System.out.print("Enter drink item (juice / water): ");
+        String drinkItem = scanner.nextLine();
+
+        System.out.print("Enter drink quantity: ");
+        int drinkQuantity = scanner.nextInt();
+
+        // Create drink object using DrinkFactory
+        Drink drink = drinkFactory.createDrink(drinkItem);
+
+        // Validate drink item
+        if (drink == null) {
+            System.out.println("Sorry, \"" + drinkItem + "\" is not on the menu.");
+            scanner.close();
+            return;
+        }
+
+        // ---------------- Calculate totals ----------------
+        double foodTotal = food.getPrice() * foodQuantity;
+        double drinkTotal = drink.getPrice() * drinkQuantity;
+        double finalTotal = foodTotal + drinkTotal;
+
+        // ---------------- Display final order ----------------
+        System.out.println("\n===== YOUR ORDER =====");
+
+        System.out.println("Food:     " + food.getDescription());
+        System.out.println("Quantity: " + foodQuantity);
+        System.out.println("Price:    " + food.getPrice() + " SAR x " + foodQuantity);
+        System.out.println("Subtotal: " + foodTotal + " SAR");
+
+        System.out.println();
+
+        System.out.println("Drink:    " + drink.getDescription());
+        System.out.println("Quantity: " + drinkQuantity);
+        System.out.println("Price:    " + drink.getPrice() + " SAR x " + drinkQuantity);
+        System.out.println("Subtotal: " + drinkTotal + " SAR");
+
+        System.out.println();
+
+        System.out.println("Total:    " + finalTotal + " SAR");
         System.out.println("======================");
+
         scanner.close();
     }
-}
+    }
