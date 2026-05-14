@@ -1,4 +1,5 @@
 package Main;
+
 import factory.AbstractFactory;
 import factory.Drink;
 import factory.FactoryProducer;
@@ -13,167 +14,241 @@ import java.util.Scanner;
 import strategy.CardPayment;
 import strategy.CashPayment;
 import strategy.PaymentContext;
-/**
- * Temporary Main to test the Factory pattern in isolation.
- * This will be replaced by the full Main.java once all parts are merged.
- *
- * @author shaha
- */
 
+/**
+ * Food Delivery System --- Main Entry Point
+ * Demonstrates:
+ *   - Abstract Factory Pattern  (FoodFactory / DrinkFactory)
+ *   - Decorator Pattern         (Cheese / Fries / ExtraSauce)
+ *   - Strategy Pattern          (CashPayment / CardPayment)
+ *   - Observer Pattern          (KitchenObserver / DeliveryObserver)
+ */
 public class FoodDeliverySystem {
 
+    // --- Formatting helpers ---------------------------------------------------
+
+    private static final int    WIDTH       = 70; 
+    private static final String DIVIDER     = "+" + "=".repeat(WIDTH - 2) + "+";
+    private static final String LINE        = "+" + "-".repeat(WIDTH - 2) + "+";
+
+    private static void printHeader(String title) {
+        String label = " " + title + " ";
+        int totalDashes = WIDTH - label.length();
+        int leftDashes = totalDashes / 2;
+        int rightDashes = totalDashes - leftDashes;
+        
+        System.out.println("-".repeat(leftDashes) + label + "-".repeat(rightDashes));
+    }
+
+    /** Print a padded line inside the receipt box. */
+    private static void boxLine(String text) {
+        int space = WIDTH - 2 - text.length();
+        int left  = Math.max(space / 2, 0);
+        int right = Math.max(space - left, 0);
+        System.out.println("|" + " ".repeat(left) + text + " ".repeat(right) + "|");
+    }
+
+    private static void boxRow(String key, String value) {
+        int gap = WIDTH - 4 - key.length() - value.length();
+        if (gap < 1) gap = 1;
+        System.out.println("| " + key + " ".repeat(gap) + value + " |");
+    }
+
+    // --- Input helpers -------------------------------------------------------
+
+    private static String readLine(Scanner sc, String prompt) {
+        String input;
+        do {
+            System.out.print(prompt);
+            input = sc.nextLine().trim();
+            if (input.isEmpty()) System.out.println("  [!] Input cannot be empty. Try again.");
+        } while (input.isEmpty());
+        return input;
+    }
+
+    private static int readPositiveInt(Scanner sc, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String line = sc.nextLine().trim();
+            try {
+                int val = Integer.parseInt(line);
+                if (val > 0) return val;
+                System.out.println("  [!] Please enter a number greater than 0.");
+            } catch (NumberFormatException e) {
+                System.out.println("  [!] Invalid number. Try again.");
+            }
+        }
+    }
+
+    private static int readIntInRange(Scanner sc, String prompt, int min, int max) {
+        while (true) {
+            System.out.print(prompt);
+            String line = sc.nextLine().trim();
+            try {
+                int val = Integer.parseInt(line);
+                if (val >= min && val <= max) return val;
+                System.out.printf("  [!] Please enter a number between %d and %d.%n", min, max);
+            } catch (NumberFormatException e) {
+                System.out.println("  [!] Invalid number. Try again.");
+            }
+        }
+    }
+
+    private static boolean readYesNo(Scanner sc, String prompt) {
+        while (true) {
+            System.out.print(prompt);
+            String ans = sc.nextLine().trim().toLowerCase();
+            if (ans.equals("yes") || ans.equals("y")) return true;
+            if (ans.equals("no")  || ans.equals("n"))  return false;
+            System.out.println("  [!] Please enter yes or no.");
+        }
+    }
+
+    /** Validates that a string contains only digits. */
+    private static boolean isNumeric(String str) {
+        if (str == null || str.isEmpty()) return false;
+        for (char c : str.toCharArray()) {
+            if (!Character.isDigit(c)) return false;
+        }
+        return true;
+    }
+
+    // Main 
+
     public static void main(String[] args) {
-         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("===== FOOD DELIVERY SYSTEM =====\n");
+        Scanner scanner = new Scanner(System.in);
 
-        // Create factories using Abstract Factory Pattern
-        AbstractFactory foodFactory = FactoryProducer.getFactory("food");
+        // Welcome 
+        System.out.println();
+        System.out.println(DIVIDER);
+        boxLine("FOOD DELIVERY SYSTEM");
+        boxLine("Fast. Fresh. Delivered.");
+        System.out.println(DIVIDER);
+        System.out.println();
+
+        // Abstract Factory setup 
+        AbstractFactory foodFactory  = FactoryProducer.getFactory("food");
         AbstractFactory drinkFactory = FactoryProducer.getFactory("drink");
 
-        // ---------------- Choose food item ----------------
-        System.out.print("Enter food item (pizza / burger): ");
-        String foodItem = scanner.nextLine();
+        // Food selection 
+        printHeader("FOOD MENU");
+        System.out.println("  1. Pizza     - 25.00 SAR");
+        System.out.println("  2. Burger    - 20.00 SAR");
+        System.out.println("-".repeat(WIDTH));
 
-        System.out.print("Enter food quantity: ");
-        int foodQuantity = scanner.nextInt();
-        scanner.nextLine(); // Clear the input buffer
-
-        // Create food object using FoodFactory
-        Food food = foodFactory.createFood(foodItem);
-
-        // Validate food item
-        if (food == null) {
-            System.out.println("Sorry, \"" + foodItem + "\" is not on the menu.");
-            scanner.close();
-            return;
+        Food food = null;
+        while (food == null) {
+            int pick = readIntInRange(scanner, "Select food (1-2): ", 1, 2);
+            String foodItem = (pick == 1) ? "pizza" : "burger";
+            food = foodFactory.createFood(foodItem);
         }
 
-        // ---------------- Add food extras ----------------
-        // Apply Decorator Pattern to add extras without changing the original food class
+        int foodQty = readPositiveInt(scanner, "Quantity: ");
 
-        System.out.print("Add cheese? (yes/no): ");
-        String cheese = scanner.nextLine();
+        // Decorator: extras 
+        System.out.println();
+        printHeader("EXTRAS");
+        System.out.println("  Cheese      +5.00 SAR");
+        System.out.println("  Fries       +7.00 SAR");
+        System.out.println("  Extra Sauce +3.00 SAR");
+        System.out.println("-".repeat(WIDTH));
 
-        if (cheese.equalsIgnoreCase("yes")) {
-            food = new Cheese(food);
+        if (readYesNo(scanner, "Add Cheese?      (yes/no): "))     food = new Cheese(food);
+        if (readYesNo(scanner, "Add Fries?       (yes/no): "))     food = new Fries(food);
+        if (readYesNo(scanner, "Add Extra Sauce? (yes/no): "))     food = new ExtraSauce(food);
+
+        // Drink selection 
+        System.out.println();
+        printHeader("DRINK MENU");
+        System.out.println("  1. Juice    - 8.00 SAR");
+        System.out.println("  2. Water    - 3.00 SAR");
+        System.out.println("-".repeat(WIDTH));
+
+        Drink drink = null;
+        while (drink == null) {
+            int pick = readIntInRange(scanner, "Select drink (1-2): ", 1, 2);
+            String drinkItem = (pick == 1) ? "juice" : "water";
+            drink = drinkFactory.createDrink(drinkItem);
         }
 
-        System.out.print("Add fries? (yes/no): ");
-        String fries = scanner.nextLine();
+        int drinkQty = readPositiveInt(scanner, "Quantity: ");
 
-        if (fries.equalsIgnoreCase("yes")) {
-            food = new Fries(food);
-        }
+        // Totals 
+        double foodTotal  = food.getPrice()  * foodQty;
+        double drinkTotal = drink.getPrice() * drinkQty;
+        double grandTotal = foodTotal + drinkTotal;
 
-        System.out.print("Add extra sauce? (yes/no): ");
-        String sauce = scanner.nextLine();
+        // Payment  
+        System.out.println();
+        printHeader("PAYMENT");
+        System.out.println("  1. Cash");
+        System.out.println("  2. Card");
+        System.out.println("-".repeat(WIDTH));
 
-        if (sauce.equalsIgnoreCase("yes")) {
-            food = new ExtraSauce(food);
-        }
+        PaymentContext paymentContext = new PaymentContext();
+        int payChoice = readIntInRange(scanner, "Select payment method (1-2): ", 1, 2);
 
-        // ---------------- Choose drink item ----------------
-        System.out.print("Enter drink item (juice / water): ");
-        String drinkItem = scanner.nextLine();
-
-        System.out.print("Enter drink quantity: ");
-        int drinkQuantity = scanner.nextInt();
-
-        // Create drink object using DrinkFactory
-        Drink drink = drinkFactory.createDrink(drinkItem);
-
-        // Validate drink item
-        if (drink == null) {
-            System.out.println("Sorry, \"" + drinkItem + "\" is not on the menu.");
-            scanner.close();
-            return;
-        }
-
-        // ---------------- Calculate totals ----------------
-        double foodTotal = food.getPrice() * foodQuantity;
-        double drinkTotal = drink.getPrice() * drinkQuantity;
-        double finalTotal = foodTotal + drinkTotal;
-
-        // ---------------- Payment Section ----------------
-        
-        // Apply Strategy Pattern to select payment method dynamically
-        PaymentContext context = new PaymentContext();
-
-        System.out.println("\nSelect Payment Method:");
-        System.out.println("1. Cash");
-        System.out.println("2. Card");
-
-        System.out.print("Enter choice: ");
-        int choice = scanner.nextInt();
-        scanner.nextLine(); // Clear buffer
-
-        // Select payment strategy
-        if (choice == 1) {
-            context.setPaymentStrategy(new CashPayment());
-        } else if (choice == 2) {
-            System.out.print("Enter card number: ");
-            String cardNumber = scanner.nextLine();
-            context.setPaymentStrategy(new CardPayment(cardNumber));
+        if (payChoice == 1) {
+            paymentContext.setPaymentStrategy(new CashPayment());
         } else {
-            System.out.println("Invalid payment method.");
-            scanner.close();
-            return;
+            String cardNumber;
+            while (true) {
+                System.out.print("Enter card number: ");
+                cardNumber = scanner.nextLine().trim();
+                if (cardNumber.isEmpty()) {
+                    System.out.println("  [!] Card number cannot be empty.");
+                } else if (!isNumeric(cardNumber)) {
+                    System.out.println("  [!] Error: Card number must contain only digits. Please do not enter letters.");
+                } else {
+                    break;
+                }
+            }
+            paymentContext.setPaymentStrategy(new CardPayment(cardNumber));
         }
-        // Process payment
-        context.processPayment(finalTotal);
-
-        // ---------------- Display final order ----------------
-        System.out.println("\n===== YOUR ORDER =====");
-
-        System.out.println("Food:     " + food.getDescription());
-        System.out.println("Quantity: " + foodQuantity);
-        System.out.println("Price:    " + food.getPrice() + " SAR x " + foodQuantity);
-        System.out.println("Subtotal: " + foodTotal + " SAR");
 
         System.out.println();
+        paymentContext.processPayment(grandTotal);
 
-        System.out.println("Drink:    " + drink.getDescription());
-        System.out.println("Quantity: " + drinkQuantity);
-        System.out.println("Price:    " + drink.getPrice() + " SAR x " + drinkQuantity);
-        System.out.println("Subtotal: " + drinkTotal + " SAR");
+        // Receipt 
+        System.out.println();
+        System.out.println(DIVIDER);
+        boxLine("ORDER RECEIPT");
+        System.out.println(LINE);
+        boxRow(food.getDescription(), String.format("x%d", foodQty));
+        boxRow("  @ " + String.format("%.2f", food.getPrice()) + " SAR each",
+               String.format("%.2f SAR", foodTotal));
+        System.out.println(LINE);
+        boxRow(drink.getDescription(), String.format("x%d", drinkQty));
+        boxRow("  @ " + String.format("%.2f", drink.getPrice()) + " SAR each",
+               String.format("%.2f SAR", drinkTotal));
+        System.out.println(LINE);
+        boxRow("TOTAL", String.format("%.2f SAR", grandTotal));
+        System.out.println(DIVIDER);
+
+        // Order Tracking 
+        String orderDetails = foodQty + "x " + food.getDescription()
+                            + " + "
+                            + drinkQty + "x " + drink.getDescription();
 
         System.out.println();
+        printHeader("ORDER TRACKING");
 
-        System.out.println("Total:    " + finalTotal + " SAR");
-        System.out.println("======================");
-
-        scanner.close();
-        
-        // ---------------- Order Tracking Section ----------------
-
-        // Create the subject
         OrderSubject orderSubject = new OrderSubject();
-
-        // Register observers
         new KitchenObserver(orderSubject);
         new DeliveryObserver(orderSubject);
 
-        // Build order details
-        String orderDetails =
-                foodQuantity + "x " + food.getDescription() +
-                " + " +
-                drinkQuantity + "x " + drink.getDescription();
+        String[] statuses = {"ORDER_PLACED", "PREPARING", "READY", "DELIVERED"};
+        for (String status : statuses) {
+            orderSubject.setOrderStatus(orderDetails, status);
+            System.out.println();
+        }
 
-        // Change statuses
-        orderSubject.setOrderStatus(orderDetails, "ORDER_PLACED");
-
+        System.out.println("-".repeat(WIDTH));
+        System.out.println("  Thank you for your order! Enjoy your meal.");
+        System.out.println("-".repeat(WIDTH));
         System.out.println();
 
-        orderSubject.setOrderStatus(orderDetails, "PREPARING");
-
-        System.out.println();
-
-        orderSubject.setOrderStatus(orderDetails, "READY");
-
-        System.out.println();
-
-        orderSubject.setOrderStatus(orderDetails, "DELIVERED");
+        scanner.close();
     }
-    
 }
