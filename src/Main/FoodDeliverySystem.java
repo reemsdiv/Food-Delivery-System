@@ -6,6 +6,9 @@ import factory.Food;
 import Decorator.Cheese;
 import Decorator.Fries;
 import Decorator.ExtraSauce;
+import Observer.DeliveryObserver;
+import Observer.KitchenObserver;
+import Observer.OrderSubject;
 import java.util.Scanner;
 import strategy.CardPayment;
 import strategy.CashPayment;
@@ -141,5 +144,36 @@ public class FoodDeliverySystem {
         System.out.println("======================");
 
         scanner.close();
+        
+        // ---------------- Order Tracking Section ----------------
+
+        // Create the subject
+        OrderSubject orderSubject = new OrderSubject();
+
+        // Register observers
+        new KitchenObserver(orderSubject);
+        new DeliveryObserver(orderSubject);
+
+        // Build order details
+        String orderDetails =
+                foodQuantity + "x " + food.getDescription() +
+                " + " +
+                drinkQuantity + "x " + drink.getDescription();
+
+        // Change statuses
+        orderSubject.setOrderStatus(orderDetails, "ORDER_PLACED");
+
+        System.out.println();
+
+        orderSubject.setOrderStatus(orderDetails, "PREPARING");
+
+        System.out.println();
+
+        orderSubject.setOrderStatus(orderDetails, "READY");
+
+        System.out.println();
+
+        orderSubject.setOrderStatus(orderDetails, "DELIVERED");
     }
-    }
+    
+}
