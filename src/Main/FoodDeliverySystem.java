@@ -7,6 +7,9 @@ import Decorator.Cheese;
 import Decorator.Fries;
 import Decorator.ExtraSauce;
 import java.util.Scanner;
+import strategy.CardPayment;
+import strategy.CashPayment;
+import strategy.PaymentContext;
 /**
  * Temporary Main to test the Factory pattern in isolation.
  * This will be replaced by the full Main.java once all parts are merged.
@@ -88,6 +91,34 @@ public class FoodDeliverySystem {
         double foodTotal = food.getPrice() * foodQuantity;
         double drinkTotal = drink.getPrice() * drinkQuantity;
         double finalTotal = foodTotal + drinkTotal;
+
+        // ---------------- Payment Section ----------------
+        
+        // Apply Strategy Pattern to select payment method dynamically
+        PaymentContext context = new PaymentContext();
+
+        System.out.println("\nSelect Payment Method:");
+        System.out.println("1. Cash");
+        System.out.println("2. Card");
+
+        System.out.print("Enter choice: ");
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Clear buffer
+
+        // Select payment strategy
+        if (choice == 1) {
+            context.setPaymentStrategy(new CashPayment());
+        } else if (choice == 2) {
+            System.out.print("Enter card number: ");
+            String cardNumber = scanner.nextLine();
+            context.setPaymentStrategy(new CardPayment(cardNumber));
+        } else {
+            System.out.println("Invalid payment method.");
+            scanner.close();
+            return;
+        }
+        // Process payment
+        context.processPayment(finalTotal);
 
         // ---------------- Display final order ----------------
         System.out.println("\n===== YOUR ORDER =====");
